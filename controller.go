@@ -70,3 +70,11 @@ func (c *Controller) Options(route string, inner echo.HandlerFunc, middlewares .
 	c.addHandler(http.MethodOptions, route, inner, middlewares...)
 	return c
 }
+
+func (c *Controller) View(route string, view string, args any, middlewares ...echo.MiddlewareFunc) *Controller {
+	c.Get(route, func(c echo.Context) error {
+		return c.Render(http.StatusOK, view, args)
+	}, middlewares...)
+
+	return c
+}

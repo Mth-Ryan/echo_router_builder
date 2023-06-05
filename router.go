@@ -1,10 +1,49 @@
 package router_builder
 
 import (
+	"html/template"
+	"io"
+	"log"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 )
+
+type Renderer struct {
+	templates *template.Template
+}
+
+func getPathsRec(baseFolder, ext string) []string {
+	paths := []string{}
+
+	err := filepath.Walk(baseFolder,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if strings.HasSuffix(path, ext) {
+				paths = append(paths, path)
+			}
+			return nil
+		})
+	if err != nil {
+		log.Println(err)
+	}
+
+	return paths
+}
+
+func NewRenderer(baseFolder, ext string) *Renderer {
+	paths := getPathsRec(baseFolder, ext)
+	templates := template.Must(template.ParseFiles(paths...))
+	return &Renderer{templates}
+}
+
+func (t *Renderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	return t.templates.ExecuteTemplate(w, name, data)
+}
 
 type RouterBuilder struct {
 	inner *echo.Echo
@@ -38,6 +77,11 @@ func (b *RouterBuilder) Register(c *Controller) *RouterBuilder {
 
 func (b *RouterBuilder) RegisterStatic(route, folder string) *RouterBuilder {
 	b.inner.Static(parseRoute(route), folder)
+	return b
+}
+
+func (b *RouterBuilder) RegisterViews(baseFolder, ext string) *RouterBuilder {
+	b.inner.Renderer = NewRenderer(baseFolder, ext)
 	return b
 }
 
