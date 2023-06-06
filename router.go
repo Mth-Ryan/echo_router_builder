@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -82,6 +83,18 @@ func (b *RouterBuilder) RegisterStatic(route, folder string) *RouterBuilder {
 
 func (b *RouterBuilder) RegisterViews(baseFolder, ext string) *RouterBuilder {
 	b.inner.Renderer = NewRenderer(baseFolder, ext)
+	return b
+}
+
+func (b *RouterBuilder) NotFoundHandler(h echo.HandlerFunc) *RouterBuilder {
+	b.inner.RouteNotFound("/*", h)
+	return b
+}
+
+func (b *RouterBuilder) NotFoundView(view string, data any) *RouterBuilder {
+	b.NotFoundHandler(func(c echo.Context) error {
+		return c.Render(http.StatusOK, view, data)
+	})
 	return b
 }
 
