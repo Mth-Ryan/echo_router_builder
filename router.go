@@ -47,14 +47,16 @@ func (t *Renderer) Render(w io.Writer, name string, data interface{}, c echo.Con
 }
 
 type RouterBuilder struct {
-	inner *echo.Echo
+	inner        *echo.Echo
+	errorHandler *ErrorHandler
 }
 
 func NewBuilder(middlewares ...echo.MiddlewareFunc) *RouterBuilder {
 	inner := echo.New()
 	inner.Use(middlewares...)
+	errorHandler := NewErrorHandler()
 
-	return &RouterBuilder{inner}
+	return &RouterBuilder{inner, errorHandler}
 }
 
 func parseRoute(r string) string {
@@ -86,16 +88,48 @@ func (b *RouterBuilder) RegisterViews(baseFolder, ext string) *RouterBuilder {
 	return b
 }
 
-func (b *RouterBuilder) NotFoundHandler(h echo.HandlerFunc) *RouterBuilder {
-	b.inner.RouteNotFound("/*", h)
+func (b *RouterBuilder) NotFoundHandler(h echo.HTTPErrorHandler) *RouterBuilder {
+	b.errorHandler.AddHandler(http.StatusNotFound, h)
 	return b
 }
 
 func (b *RouterBuilder) NotFoundView(view string, data any) *RouterBuilder {
-	b.NotFoundHandler(func(c echo.Context) error {
-		return c.Render(http.StatusOK, view, data)
+	return b.NotFoundHandler(func(err error, c echo.Context) {
+		c.Render(http.StatusNotFound, view, data)
 	})
+}
+
+func (b *RouterBuilder) UnauthorizedHandler(h echo.HTTPErrorHandler) *RouterBuilder {
+	b.errorHandler.AddHandler(http.StatusUnauthorized, h)
 	return b
+}
+
+func (b *RouterBuilder) UnauthorizedView(view string, data any) *RouterBuilder {
+	return b.NotFoundHandler(func(err error, c echo.Context) {
+		c.Render(http.StatusUnauthorized, view, data)
+	})
+}
+
+func (b *RouterBuilder) InternalServerErrorHandler(h echo.HTTPErrorHandler) *RouterBuilder {
+	b.errorHandler.AddHandler(http.StatusInternalServerError, h)
+	return b
+}
+
+func (b *RouterBuilder) InternalServerErrorView(view string, data any) *RouterBuilder {
+	return b.NotFoundHandler(func(err error, c echo.Context) {
+		c.Render(http.StatusInternalServerError, view, data)
+	})
+}
+
+func (b *RouterBuilder) ForbidenHandler(h echo.HTTPErrorHandler) *RouterBuilder {
+	b.errorHandler.AddHandler(http.StatusForbidden, h)
+	return b
+}
+
+func (b *RouterBuilder) ForbidenView(view string, data any) *RouterBuilder {
+	return b.NotFoundHandler(func(err error, c echo.Context) {
+		c.Render(http.StatusForbidden, view, data)
+	})
 }
 
 func (b *RouterBuilder) Build() *echo.Echo {
