@@ -133,5 +133,6 @@ func (b *RouterBuilder) ForbidenView(view string, data any) *RouterBuilder {
 }
 
 func (b *RouterBuilder) Build() *echo.Echo {
+	b.inner.HTTPErrorHandler = b.errorHandler.GetHandler()
 	return b.inner
 }
