@@ -78,3 +78,46 @@ func (c *Controller) View(route string, view string, args any, middlewares ...ec
 
 	return c
 }
+
+func (c *Controller) ViewWitchCB(route string, view string, dataCB func(echo.Context) any, middlewares ...echo.MiddlewareFunc) *Controller {
+	c.Get(route, func(c echo.Context) error {
+		return c.Render(http.StatusOK, view, dataCB(c))
+	}, middlewares...)
+
+	return c
+}
+
+func (c *Controller) RedirectGet(route string, to string) *Controller {
+	c.Get(route, func(c echo.Context) error {
+		return c.Redirect(http.StatusOK, to)
+	})
+	return c
+}
+
+func (c *Controller) RedirectPost(route string, to string, status int) *Controller {
+	c.Post(route, func(c echo.Context) error {
+		return c.Redirect(status, to)
+	})
+	return c
+}
+
+func (c *Controller) RedirectPut(route string, to string, status int) *Controller {
+	c.Put(route, func(c echo.Context) error {
+		return c.Redirect(status, to)
+	})
+	return c
+}
+
+func (c *Controller) RedirectDelete(route string, to string, status int) *Controller {
+	c.Delete(route, func(c echo.Context) error {
+		return c.Redirect(status, to)
+	})
+	return c
+}
+
+func (c *Controller) RedirectPatch(route string, to string, status int) *Controller {
+	c.Patch(route, func(c echo.Context) error {
+		return c.Redirect(status, to)
+	})
+	return c
+}
