@@ -87,9 +87,9 @@ func (c *Controller) ViewWitchCB(route string, view string, dataCB func(echo.Con
 	return c
 }
 
-func (c *Controller) RedirectGet(route string, to string) *Controller {
+func (c *Controller) RedirectGet(route string, to string, status int) *Controller {
 	c.Get(route, func(c echo.Context) error {
-		return c.Redirect(http.StatusOK, to)
+		return c.Redirect(status, to)
 	})
 	return c
 }
