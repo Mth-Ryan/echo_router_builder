@@ -20,6 +20,7 @@ func newHandler(method, route string, inner echo.HandlerFunc, middlewares ...ech
 type Controller struct {
 	baseRoute   string
 	handlers    []Handler
+	children    []*Controller
 	middlewares []echo.MiddlewareFunc
 }
 
@@ -27,8 +28,14 @@ func NewController(baseRoute string, middlewares ...echo.MiddlewareFunc) *Contro
 	return &Controller{
 		baseRoute:   baseRoute,
 		middlewares: middlewares,
+		children:    []*Controller{},
 		handlers:    []Handler{},
 	}
+}
+
+func (c *Controller) SubController(sub *Controller) *Controller {
+	c.children = append(c.children, sub)
+	return c
 }
 
 func (c *Controller) addHandler(method, route string, inner echo.HandlerFunc, middlewares ...echo.MiddlewareFunc) {

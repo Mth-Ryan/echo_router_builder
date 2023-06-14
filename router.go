@@ -46,6 +46,11 @@ func (t *Renderer) Render(w io.Writer, name string, data interface{}, c echo.Con
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
+type InnerRouter interface {
+	Add(method, path string, handler echo.HandlerFunc, middleware ...echo.MiddlewareFunc) *echo.Route
+	Group(prefix string, m ...echo.MiddlewareFunc) (g *echo.Group)
+}
+
 type RouterBuilder struct {
 	inner        *echo.Echo
 	errorHandler *ErrorHandler
@@ -68,13 +73,22 @@ func parseRoute(r string) string {
 	return r
 }
 
-func (b *RouterBuilder) Register(c *Controller) *RouterBuilder {
-	g := b.inner.Group(parseRoute(c.baseRoute), c.middlewares...)
+func register(e InnerRouter, c *Controller) {
+	if c != nil {
+		g := e.Group(parseRoute(c.baseRoute), c.middlewares...)
 
-	for _, h := range c.handlers {
-		g.Add(h.method, parseRoute(h.route), h.inner, h.middlewares...)
+		for _, h := range c.handlers {
+			g.Add(h.method, parseRoute(h.route), h.inner, h.middlewares...)
+		}
+
+		for _, ch := range c.children {
+			register(g, ch)
+		}
 	}
+}
 
+func (b *RouterBuilder) Register(c *Controller) *RouterBuilder {
+	register(b.inner, c)
 	return b
 }
 
